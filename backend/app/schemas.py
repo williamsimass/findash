@@ -77,6 +77,11 @@ class TransactionCreate(BaseModel):
     first_due_date: Optional[datetime] = None
 
 
+class TransactionUpdate(BaseModel):
+    category: Optional[str] = None
+    payment_method: Optional[str] = None
+
+
 class TransactionResponse(BaseModel):
     id: int
     user_id: int

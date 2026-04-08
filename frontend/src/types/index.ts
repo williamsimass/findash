@@ -76,7 +76,7 @@ export const INCOME_CATEGORIES = [
 
 export const EXPENSE_CATEGORIES = [
   'Alimentação', 'Transporte', 'Saúde', 'Educação', 'Lazer',
-  'Casa', 'Vestuário', 'Tecnologia', 'Cartão de Crédito', 'Assinaturas', 'Outros'
+  'Casa', 'Aluguel', 'Vestuário', 'Tecnologia', 'Cartão de Crédito', 'Assinaturas', 'Outros'
 ]
 
 export const PAYMENT_METHODS = [
@@ -96,6 +96,7 @@ export const CATEGORY_COLORS: Record<string, string> = {
   Educação:           '#8B5CF6',
   Lazer:              '#EC4899',
   Casa:               '#14B8A6',
+  Aluguel:            '#F97316',
   Vestuário:          '#F97316',
   Tecnologia:         '#6366F1',
   'Cartão de Crédito':'#EF4444',

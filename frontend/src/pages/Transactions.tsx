@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Search, Plus, ArrowUpRight, ArrowDownRight, CreditCard,
-  Trash2, Filter, TrendingUp, TrendingDown,
+  Trash2, Filter, TrendingUp, TrendingDown, Pencil, Home,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { transactionsApi } from '../lib/api'
@@ -11,6 +11,8 @@ import { formatCurrency, formatDate } from '../lib/utils'
 import { cn } from '../lib/utils'
 import AddIncomeModal from '../components/Modals/AddIncomeModal'
 import AddExpenseModal from '../components/Modals/AddExpenseModal'
+import EditTransactionModal from '../components/Modals/EditTransactionModal'
+import AddAluguelModal from '../components/Modals/AddAluguelModal'
 import type { Transaction } from '../types'
 import { EXPENSE_CATEGORIES } from '../types'
 
@@ -23,6 +25,8 @@ export default function Transactions() {
   const [catFilter, setCatFilter] = useState('')
   const [showIncome, setShowIncome]   = useState(false)
   const [showExpense, setShowExpense] = useState(false)
+  const [showAluguel, setShowAluguel] = useState(false)
+  const [editTarget, setEditTarget]   = useState<Transaction | null>(null)
 
   const params: Record<string, unknown> = { limit: 100 }
   if (typeFilter !== 'all') params.type = typeFilter
@@ -43,16 +47,14 @@ export default function Transactions() {
     if (!confirm('Remover esta transação?')) return
     try {
       await transactionsApi.delete(id)
-      qc.invalidateQueries({ queryKey: ['transactions'] })
-      qc.invalidateQueries({ queryKey: ['summary'] })
-      qc.invalidateQueries({ queryKey: ['installmentTransactions'] })
+      invalidate()
       toast.success('Transação removida')
     } catch {
       toast.error('Erro ao remover')
     }
   }
 
-  function onSuccess() {
+  function invalidate() {
     qc.invalidateQueries({ queryKey: ['transactions'] })
     qc.invalidateQueries({ queryKey: ['summary'] })
     qc.invalidateQueries({ queryKey: ['installmentTransactions'] })
@@ -104,6 +106,12 @@ export default function Transactions() {
             className="flex items-center gap-1.5 px-3 py-2 bg-rose-500 hover:bg-rose-600 text-white font-semibold rounded-xl text-xs transition-colors"
           >
             <TrendingDown className="w-4 h-4" /> Despesa
+          </button>
+          <button
+            onClick={() => setShowAluguel(true)}
+            className="flex items-center gap-1.5 px-3 py-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl text-xs transition-colors"
+          >
+            <Home className="w-4 h-4" /> Aluguel
           </button>
         </div>
       </div>
@@ -231,13 +239,22 @@ export default function Transactions() {
                     <p className="text-xs text-slate-400 dark:text-gray-500">{formatDate(t.date)}</p>
                   </div>
 
-                  {/* Delete */}
-                  <button
-                    onClick={() => handleDelete(t.id)}
-                    className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-500/10 text-slate-300 dark:text-gray-600 hover:text-rose-500 transition-all"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  {/* Actions (edit + delete) */}
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                    <button
+                      onClick={() => setEditTarget(t)}
+                      className="p-1.5 rounded-lg hover:bg-brand-50 dark:hover:bg-brand-500/10 text-slate-300 dark:text-gray-600 hover:text-brand-500 transition-all"
+                      title="Editar categoria / forma de pagamento"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(t.id)}
+                      className="p-1.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-500/10 text-slate-300 dark:text-gray-600 hover:text-rose-500 transition-all"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </motion.div>
               ))}
             </div>
@@ -248,12 +265,23 @@ export default function Transactions() {
       <AddIncomeModal
         open={showIncome}
         onClose={() => setShowIncome(false)}
-        onSuccess={() => { onSuccess(); setShowIncome(false) }}
+        onSuccess={() => { invalidate(); setShowIncome(false) }}
       />
       <AddExpenseModal
         open={showExpense}
         onClose={() => setShowExpense(false)}
-        onSuccess={() => { onSuccess(); setShowExpense(false) }}
+        onSuccess={() => { invalidate(); setShowExpense(false) }}
+      />
+      <AddAluguelModal
+        open={showAluguel}
+        onClose={() => setShowAluguel(false)}
+        onSuccess={() => { invalidate(); setShowAluguel(false) }}
+      />
+      <EditTransactionModal
+        open={editTarget !== null}
+        transaction={editTarget}
+        onClose={() => setEditTarget(null)}
+        onSuccess={() => { invalidate(); setEditTarget(null) }}
       />
     </div>
   )

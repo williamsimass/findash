@@ -9,7 +9,7 @@ from .. import models, schemas
 router = APIRouter()
 
 
-@router.get("/", response_model=List[schemas.InstallmentResponse])
+@router.get("", response_model=List[schemas.InstallmentResponse])
 def list_installments(
     current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db),

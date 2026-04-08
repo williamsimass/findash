@@ -6,6 +6,8 @@ import Dashboard from './pages/Dashboard'
 import Transactions from './pages/Transactions'
 import Installments from './pages/Installments'
 import Profile from './pages/Profile'
+import Changelog from './pages/Changelog'
+import Contact from './pages/Contact'
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { token } = useAuth()
@@ -30,6 +32,8 @@ export default function App() {
           <Route path="transactions"  element={<Transactions />} />
           <Route path="installments"  element={<Installments />} />
           <Route path="profile"       element={<Profile />} />
+          <Route path="changelog"     element={<Changelog />} />
+          <Route path="contact"       element={<Contact />} />
         </Route>
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>

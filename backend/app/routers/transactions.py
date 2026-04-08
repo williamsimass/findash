@@ -134,7 +134,7 @@ def get_summary(
     }
 
 
-@router.get("/", response_model=List[schemas.TransactionResponse])
+@router.get("", response_model=List[schemas.TransactionResponse])
 def list_transactions(
     type: Optional[str] = None,
     category: Optional[str] = None,
@@ -155,7 +155,7 @@ def list_transactions(
     return q.offset(skip).limit(limit).all()
 
 
-@router.post("/", response_model=schemas.TransactionResponse, status_code=201)
+@router.post("", response_model=schemas.TransactionResponse, status_code=201)
 def create_transaction(
     payload: schemas.TransactionCreate,
     current_user: models.User = Depends(get_current_user),
@@ -194,6 +194,28 @@ def create_transaction(
                 )
             )
 
+    db.commit()
+    db.refresh(txn)
+    return txn
+
+
+@router.patch("/{txn_id}", response_model=schemas.TransactionResponse)
+def update_transaction(
+    txn_id: int,
+    payload: schemas.TransactionUpdate,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    txn = db.query(models.Transaction).filter(
+        models.Transaction.id == txn_id,
+        models.Transaction.user_id == current_user.id,
+    ).first()
+    if not txn:
+        raise HTTPException(status_code=404, detail="Transação não encontrada")
+    if payload.category is not None:
+        txn.category = payload.category
+    if payload.payment_method is not None:
+        txn.payment_method = payload.payment_method
     db.commit()
     db.refresh(txn)
     return txn

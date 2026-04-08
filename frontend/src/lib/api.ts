@@ -43,12 +43,15 @@ export const usersApi = {
     api.put('/users/me/password', { current_password, new_password }),
 }
 
+
 // ─── Transactions ─────────────────────────────────────────────────────────────
 export const transactionsApi = {
   list: (params?: Record<string, unknown>) =>
     api.get('/transactions', { params }),
   summary: () => api.get('/transactions/summary'),
   create: (data: CreateTransactionDto) => api.post('/transactions', data),
+  update: (id: number, data: { category?: string; payment_method?: string }) =>
+    api.patch(`/transactions/${id}`, data),
   delete: (id: number) => api.delete(`/transactions/${id}`),
 }
 
