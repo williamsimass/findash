@@ -20,13 +20,11 @@ function useHasNewUpdate() {
   const [hasNew, setHasNew] = useState(() => {
     return localStorage.getItem(CHANGELOG_SEEN_KEY) !== CURRENT_VERSION
   })
-
   useEffect(() => {
     function onSeen() { setHasNew(false) }
     window.addEventListener('changelog-seen', onSeen)
     return () => window.removeEventListener('changelog-seen', onSeen)
   }, [])
-
   return hasNew
 }
 
@@ -46,14 +44,8 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
         <div className="w-9 h-9 rounded-xl bg-brand-500 flex items-center justify-center shadow-lg shadow-brand-500/30">
           <TrendingUp className="w-5 h-5 text-white" />
         </div>
-        <span className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">
-          FinDash
-        </span>
-        {/* Mobile close */}
-        <button
-          onClick={onClose}
-          className="ml-auto lg:hidden p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-gray-800 text-slate-500 dark:text-gray-400"
-        >
+        <span className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">FinDash</span>
+        <button onClick={onClose} className="ml-auto lg:hidden p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-gray-800 text-slate-500 dark:text-gray-400">
           <X className="w-5 h-5" />
         </button>
       </div>
@@ -102,9 +94,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
           </div>
           <span>Notas de Atualização</span>
           {hasNewUpdate && (
-            <span className="ml-auto text-xs px-1.5 py-0.5 rounded-full bg-rose-500 text-white font-bold leading-none">
-              Novo
-            </span>
+            <span className="ml-auto text-xs px-1.5 py-0.5 rounded-full bg-rose-500 text-white font-bold leading-none">Novo</span>
           )}
         </NavLink>
 
@@ -136,9 +126,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
             {user?.avatar_icon || '👤'}
           </div>
           <div className="overflow-hidden">
-            <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">
-              {user?.full_name || user?.username}
-            </p>
+            <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">{user?.full_name || user?.username}</p>
             <p className="text-xs text-slate-500 dark:text-gray-500 truncate">{user?.email}</p>
           </div>
         </NavLink>
@@ -148,26 +136,16 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
 
   return (
     <>
-      {/* Desktop sidebar */}
       <aside className="hidden lg:flex w-64 shrink-0 bg-white dark:bg-gray-900 border-r border-slate-200 dark:border-gray-800 h-screen sticky top-0 flex-col">
         {content}
       </aside>
-
-      {/* Mobile overlay */}
       <AnimatePresence>
         {open && (
           <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden"
-              onClick={onClose}
-            />
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden" onClick={onClose} />
             <motion.aside
-              initial={{ x: -280 }}
-              animate={{ x: 0 }}
-              exit={{ x: -280 }}
+              initial={{ x: -280 }} animate={{ x: 0 }} exit={{ x: -280 }}
               transition={{ type: 'spring', stiffness: 300, damping: 30 }}
               className="fixed inset-y-0 left-0 z-50 w-72 bg-white dark:bg-gray-900 border-r border-slate-200 dark:border-gray-800 flex flex-col lg:hidden"
             >

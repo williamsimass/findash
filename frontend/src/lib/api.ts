@@ -43,7 +43,6 @@ export const usersApi = {
     api.put('/users/me/password', { current_password, new_password }),
 }
 
-
 // ─── Transactions ─────────────────────────────────────────────────────────────
 export const transactionsApi = {
   list: (params?: Record<string, unknown>) =>

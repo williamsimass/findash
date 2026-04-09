@@ -29,6 +29,7 @@ export interface Transaction {
   person_name: string | null
   date: string
   is_installment: boolean
+  is_recurring: boolean
   total_installments: number | null
   created_at: string
   installments: Installment[]
@@ -66,6 +67,7 @@ export interface CreateTransactionDto {
   person_name?: string
   date: string
   is_installment?: boolean
+  is_recurring?: boolean
   total_installments?: number
   first_due_date?: string
 }

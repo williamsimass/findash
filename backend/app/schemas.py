@@ -73,6 +73,7 @@ class TransactionCreate(BaseModel):
     person_name: Optional[str] = None
     date: datetime
     is_installment: bool = False
+    is_recurring: bool = False
     total_installments: Optional[int] = None
     first_due_date: Optional[datetime] = None
 
@@ -93,6 +94,7 @@ class TransactionResponse(BaseModel):
     person_name: Optional[str]
     date: datetime
     is_installment: bool
+    is_recurring: bool
     total_installments: Optional[int]
     created_at: datetime
     installments: List[InstallmentResponse] = []

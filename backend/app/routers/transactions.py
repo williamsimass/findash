@@ -24,26 +24,26 @@ def get_summary(
     current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    import calendar as cal
     uid = current_user.id
+    now = datetime.utcnow()
+    cur_month_end = datetime(now.year, now.month,
+                             cal.monthrange(now.year, now.month)[1], 23, 59, 59)
 
+    # ── Income ────────────────────────────────────────────────────────────────
     total_income = db.query(func.sum(models.Transaction.amount)).filter(
         models.Transaction.user_id == uid,
         models.Transaction.type == "income",
     ).scalar() or 0.0
 
-    total_expenses = db.query(func.sum(models.Transaction.amount)).filter(
-        models.Transaction.user_id == uid,
-        models.Transaction.type == "expense",
-    ).scalar() or 0.0
-
-    # Non-installment expenses (paid immediately)
+    # ── Non-installment expenses (paid immediately) ───────────────────────────
     non_installment = db.query(func.sum(models.Transaction.amount)).filter(
         models.Transaction.user_id == uid,
         models.Transaction.type == "expense",
         models.Transaction.is_installment == False,
     ).scalar() or 0.0
 
-    # Sum of paid installments
+    # ── Installment expenses: paid ────────────────────────────────────────────
     paid_inst = (
         db.query(func.sum(models.Installment.amount))
         .join(models.Transaction)
@@ -51,29 +51,31 @@ def get_summary(
             models.Transaction.user_id == uid,
             models.Installment.is_paid == True,
         )
-        .scalar()
-        or 0.0
+        .scalar() or 0.0
     )
 
-    paid_amount = non_installment + paid_inst
-
-    # Pending installments
+    # ── Installment expenses: pending due on or before end of current month ───
+    # For recurring/installments we only count what's actually due this month,
+    # not all future installments — avoids inflating balance with years of rent
     pending_inst = (
         db.query(func.sum(models.Installment.amount))
         .join(models.Transaction)
         .filter(
             models.Transaction.user_id == uid,
             models.Installment.is_paid == False,
+            models.Installment.due_date <= cur_month_end,
         )
-        .scalar()
-        or 0.0
+        .scalar() or 0.0
     )
 
+    paid_amount = non_installment + paid_inst
+    total_expenses = non_installment + paid_inst + pending_inst
     balance = total_income - total_expenses
     available = total_income - paid_amount
 
     # ── Monthly data (last 6 months) ─────────────────────────────────────────
-    now = datetime.utcnow()
+    MONTHS_PT = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun",
+                 "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
     monthly_data = []
     for i in range(5, -1, -1):
         month = (now.month - 1 - i) % 12 + 1
@@ -81,9 +83,7 @@ def get_summary(
         if (now.month - 1 - i) < 0:
             year -= 1
         m_start = datetime(year, month, 1)
-        import calendar
-        last_day = calendar.monthrange(year, month)[1]
-        m_end = datetime(year, month, last_day, 23, 59, 59)
+        m_end = datetime(year, month, cal.monthrange(year, month)[1], 23, 59, 59)
 
         m_income = db.query(func.sum(models.Transaction.amount)).filter(
             models.Transaction.user_id == uid,
@@ -92,35 +92,72 @@ def get_summary(
             models.Transaction.date <= m_end,
         ).scalar() or 0.0
 
-        m_expenses = db.query(func.sum(models.Transaction.amount)).filter(
+        # Non-installment expenses by transaction date
+        m_exp_non_inst = db.query(func.sum(models.Transaction.amount)).filter(
             models.Transaction.user_id == uid,
             models.Transaction.type == "expense",
+            models.Transaction.is_installment == False,
             models.Transaction.date >= m_start,
             models.Transaction.date <= m_end,
         ).scalar() or 0.0
 
-        MONTHS_PT = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun",
-                     "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
+        # Installment expenses by installment due_date (each parcel in its real month)
+        m_exp_inst = (
+            db.query(func.sum(models.Installment.amount))
+            .join(models.Transaction)
+            .filter(
+                models.Transaction.user_id == uid,
+                models.Transaction.type == "expense",
+                models.Installment.due_date >= m_start,
+                models.Installment.due_date <= m_end,
+            )
+            .scalar() or 0.0
+        )
+
         monthly_data.append({
             "month": MONTHS_PT[month - 1],
             "year": year,
             "income": round(float(m_income), 2),
-            "expenses": round(float(m_expenses), 2),
+            "expenses": round(float(m_exp_non_inst + m_exp_inst), 2),
         })
 
     # ── Category data (current month) ────────────────────────────────────────
     cur_start = datetime(now.year, now.month, 1)
-    cat_rows = (
+
+    # Non-installment by transaction date
+    cat_non_inst = (
         db.query(models.Transaction.category, func.sum(models.Transaction.amount))
         .filter(
             models.Transaction.user_id == uid,
             models.Transaction.type == "expense",
+            models.Transaction.is_installment == False,
             models.Transaction.date >= cur_start,
+            models.Transaction.date <= cur_month_end,
         )
         .group_by(models.Transaction.category)
         .all()
     )
-    category_data = [{"category": c, "amount": round(float(a), 2)} for c, a in cat_rows]
+
+    # Installment by installment due_date
+    cat_inst = (
+        db.query(models.Transaction.category, func.sum(models.Installment.amount))
+        .join(models.Installment)
+        .filter(
+            models.Transaction.user_id == uid,
+            models.Transaction.type == "expense",
+            models.Installment.due_date >= cur_start,
+            models.Installment.due_date <= cur_month_end,
+        )
+        .group_by(models.Transaction.category)
+        .all()
+    )
+
+    cat_totals: dict = {}
+    for cat, amt in cat_non_inst:
+        cat_totals[cat] = cat_totals.get(cat, 0.0) + float(amt)
+    for cat, amt in cat_inst:
+        cat_totals[cat] = cat_totals.get(cat, 0.0) + float(amt)
+    category_data = [{"category": c, "amount": round(a, 2)} for c, a in cat_totals.items()]
 
     return {
         "total_income": round(float(total_income), 2),
@@ -171,6 +208,7 @@ def create_transaction(
         person_name=payload.person_name,
         date=payload.date,
         is_installment=payload.is_installment,
+        is_recurring=payload.is_recurring,
         total_installments=payload.total_installments,
     )
     db.add(txn)

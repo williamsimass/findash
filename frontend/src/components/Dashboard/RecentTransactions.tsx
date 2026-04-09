@@ -69,11 +69,15 @@ export default function RecentTransactions({ transactions, onDelete }: Props) {
                     <span className="text-xs text-blue-500">{t.person_name}</span>
                   </>
                 )}
-                {t.is_installment && t.total_installments && (
+                {t.is_recurring ? (
+                  <span className="text-xs px-1.5 py-0.5 rounded-md bg-orange-500/10 text-orange-500 font-medium">
+                    Recorrente
+                  </span>
+                ) : t.is_installment && t.total_installments ? (
                   <span className="text-xs px-1.5 py-0.5 rounded-md bg-blue-500/10 text-blue-500 font-medium">
                     {t.total_installments}x
                   </span>
-                )}
+                ) : null}
               </div>
             </div>
 
@@ -83,7 +87,11 @@ export default function RecentTransactions({ transactions, onDelete }: Props) {
                 'text-sm font-bold',
                 t.type === 'income' ? 'text-emerald-500' : 'text-rose-500'
               )}>
-                {t.type === 'income' ? '+' : '-'}{formatCurrency(t.amount)}
+                {t.type === 'income' ? '+' : '-'}{formatCurrency(
+                  t.is_recurring && t.total_installments
+                    ? t.amount / t.total_installments
+                    : t.amount
+                )}{t.is_recurring && <span className="text-xs font-normal opacity-60">/mês</span>}
               </p>
               <p className="text-xs text-slate-400 dark:text-gray-500 mt-0.5">
                 {formatDate(t.date)}

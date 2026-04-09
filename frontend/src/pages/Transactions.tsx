@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Search, Plus, ArrowUpRight, ArrowDownRight, CreditCard,
+  Search, ArrowUpRight, ArrowDownRight, CreditCard,
   Trash2, Filter, TrendingUp, TrendingDown, Pencil, Home,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -13,6 +13,7 @@ import AddIncomeModal from '../components/Modals/AddIncomeModal'
 import AddExpenseModal from '../components/Modals/AddExpenseModal'
 import EditTransactionModal from '../components/Modals/EditTransactionModal'
 import AddAluguelModal from '../components/Modals/AddAluguelModal'
+import ConfirmModal from '../components/Modals/ConfirmModal'
 import type { Transaction } from '../types'
 import { EXPENSE_CATEGORIES } from '../types'
 
@@ -27,6 +28,7 @@ export default function Transactions() {
   const [showExpense, setShowExpense] = useState(false)
   const [showAluguel, setShowAluguel] = useState(false)
   const [editTarget, setEditTarget]   = useState<Transaction | null>(null)
+  const [deleteId, setDeleteId]       = useState<number | null>(null)
 
   const params: Record<string, unknown> = { limit: 100 }
   if (typeFilter !== 'all') params.type = typeFilter
@@ -43,14 +45,16 @@ export default function Transactions() {
     (t.person_name?.toLowerCase().includes(search.toLowerCase()))
   )
 
-  async function handleDelete(id: number) {
-    if (!confirm('Remover esta transação?')) return
+  async function confirmDelete() {
+    if (deleteId === null) return
     try {
-      await transactionsApi.delete(id)
+      await transactionsApi.delete(deleteId)
       invalidate()
       toast.success('Transação removida')
     } catch {
       toast.error('Erro ao remover')
+    } finally {
+      setDeleteId(null)
     }
   }
 
@@ -64,7 +68,6 @@ export default function Transactions() {
     <div className="space-y-5 animate-fade-in">
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row gap-3">
-        {/* Search */}
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-gray-500" />
           <input
@@ -75,7 +78,6 @@ export default function Transactions() {
           />
         </div>
 
-        {/* Type filter */}
         <div className="flex bg-slate-100 dark:bg-gray-800 rounded-xl p-1 gap-1">
           {(['all', 'income', 'expense'] as TypeFilter[]).map((t) => (
             <button
@@ -93,24 +95,17 @@ export default function Transactions() {
           ))}
         </div>
 
-        {/* Add buttons */}
         <div className="flex gap-2">
-          <button
-            onClick={() => setShowIncome(true)}
-            className="flex items-center gap-1.5 px-3 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-xl text-xs transition-colors"
-          >
+          <button onClick={() => setShowIncome(true)}
+            className="flex items-center gap-1.5 px-3 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-xl text-xs transition-colors">
             <TrendingUp className="w-4 h-4" /> Receita
           </button>
-          <button
-            onClick={() => setShowExpense(true)}
-            className="flex items-center gap-1.5 px-3 py-2 bg-rose-500 hover:bg-rose-600 text-white font-semibold rounded-xl text-xs transition-colors"
-          >
+          <button onClick={() => setShowExpense(true)}
+            className="flex items-center gap-1.5 px-3 py-2 bg-rose-500 hover:bg-rose-600 text-white font-semibold rounded-xl text-xs transition-colors">
             <TrendingDown className="w-4 h-4" /> Despesa
           </button>
-          <button
-            onClick={() => setShowAluguel(true)}
-            className="flex items-center gap-1.5 px-3 py-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl text-xs transition-colors"
-          >
+          <button onClick={() => setShowAluguel(true)}
+            className="flex items-center gap-1.5 px-3 py-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl text-xs transition-colors">
             <Home className="w-4 h-4" /> Aluguel
           </button>
         </div>
@@ -120,37 +115,23 @@ export default function Transactions() {
       <div className="flex gap-2 flex-wrap">
         <button
           onClick={() => setCatFilter('')}
-          className={cn(
-            'px-3 py-1.5 rounded-full text-xs font-medium transition-all',
-            !catFilter
-              ? 'bg-brand-500 text-white'
-              : 'bg-slate-100 dark:bg-gray-800 text-slate-600 dark:text-gray-400 hover:bg-slate-200 dark:hover:bg-gray-700'
+          className={cn('px-3 py-1.5 rounded-full text-xs font-medium transition-all',
+            !catFilter ? 'bg-brand-500 text-white' : 'bg-slate-100 dark:bg-gray-800 text-slate-600 dark:text-gray-400 hover:bg-slate-200 dark:hover:bg-gray-700'
           )}
-        >
-          Todas
-        </button>
+        >Todas</button>
         {EXPENSE_CATEGORIES.map((c) => (
-          <button
-            key={c}
-            onClick={() => setCatFilter(catFilter === c ? '' : c)}
-            className={cn(
-              'px-3 py-1.5 rounded-full text-xs font-medium transition-all',
-              catFilter === c
-                ? 'bg-brand-500 text-white'
-                : 'bg-slate-100 dark:bg-gray-800 text-slate-600 dark:text-gray-400 hover:bg-slate-200 dark:hover:bg-gray-700'
+          <button key={c} onClick={() => setCatFilter(catFilter === c ? '' : c)}
+            className={cn('px-3 py-1.5 rounded-full text-xs font-medium transition-all',
+              catFilter === c ? 'bg-brand-500 text-white' : 'bg-slate-100 dark:bg-gray-800 text-slate-600 dark:text-gray-400 hover:bg-slate-200 dark:hover:bg-gray-700'
             )}
-          >
-            {c}
-          </button>
+          >{c}</button>
         ))}
       </div>
 
-      {/* Count */}
       <p className="text-sm text-slate-500 dark:text-gray-400">
         {transactions.length} transaç{transactions.length === 1 ? 'ão' : 'ões'}
       </p>
 
-      {/* List */}
       {isLoading ? (
         <div className="space-y-3">
           {Array.from({ length: 5 }).map((_, i) => (
@@ -168,9 +149,7 @@ export default function Transactions() {
         <div className="card p-12 flex flex-col items-center justify-center text-center">
           <Filter className="w-10 h-10 text-slate-300 dark:text-gray-600 mb-3" />
           <p className="font-medium text-slate-600 dark:text-gray-400">Nenhuma transação encontrada</p>
-          <p className="text-sm text-slate-400 dark:text-gray-500 mt-1">
-            Tente mudar os filtros ou adicione uma nova transação.
-          </p>
+          <p className="text-sm text-slate-400 dark:text-gray-500 mt-1">Tente mudar os filtros ou adicione uma nova transação.</p>
         </div>
       ) : (
         <div className="card overflow-hidden">
@@ -185,11 +164,8 @@ export default function Transactions() {
                   transition={{ delay: i * 0.02 }}
                   className="flex items-center gap-4 px-5 py-4 hover:bg-slate-50 dark:hover:bg-gray-800/50 transition-colors group"
                 >
-                  {/* Icon */}
-                  <div className={cn(
-                    'w-10 h-10 rounded-xl flex items-center justify-center shrink-0',
-                    t.type === 'income' ? 'bg-emerald-500/10'
-                      : t.is_installment ? 'bg-blue-500/10' : 'bg-rose-500/10'
+                  <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center shrink-0',
+                    t.type === 'income' ? 'bg-emerald-500/10' : t.is_installment ? 'bg-blue-500/10' : 'bg-rose-500/10'
                   )}>
                     {t.type === 'income' ? (
                       <ArrowUpRight className="w-5 h-5 text-emerald-500" />
@@ -200,56 +176,49 @@ export default function Transactions() {
                     )}
                   </div>
 
-                  {/* Description */}
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
-                      {t.description}
-                    </p>
+                    <p className="text-sm font-medium text-slate-900 dark:text-white truncate">{t.description}</p>
                     <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
-                      <span className={cn(
-                        'text-xs px-2 py-0.5 rounded-full font-medium',
+                      <span className={cn('text-xs px-2 py-0.5 rounded-full font-medium',
                         t.type === 'income'
                           ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'
                           : 'bg-slate-100 text-slate-600 dark:bg-gray-800 dark:text-gray-400'
-                      )}>
-                        {t.category}
-                      </span>
-                      {t.person_name && (
-                        <span className="text-xs text-blue-500">💳 {t.person_name}</span>
-                      )}
-                      {t.payment_method && (
-                        <span className="text-xs text-slate-400 dark:text-gray-500">{t.payment_method}</span>
-                      )}
-                      {t.is_installment && t.total_installments && (
+                      )}>{t.category}</span>
+                      {t.person_name && <span className="text-xs text-blue-500">💳 {t.person_name}</span>}
+                      {t.payment_method && <span className="text-xs text-slate-400 dark:text-gray-500">{t.payment_method}</span>}
+                      {t.is_recurring ? (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-500 font-medium">
+                          Recorrente
+                        </span>
+                      ) : t.is_installment && t.total_installments ? (
                         <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-500 font-medium">
                           {t.total_installments}x de {formatCurrency(t.amount / t.total_installments)}
                         </span>
-                      )}
+                      ) : null}
                     </div>
                   </div>
 
-                  {/* Amount + Date */}
                   <div className="text-right shrink-0">
-                    <p className={cn(
-                      'text-sm font-bold',
-                      t.type === 'income' ? 'text-emerald-500' : 'text-rose-500'
-                    )}>
-                      {t.type === 'income' ? '+' : '-'}{formatCurrency(t.amount)}
+                    <p className={cn('text-sm font-bold', t.type === 'income' ? 'text-emerald-500' : 'text-rose-500')}>
+                      {t.type === 'income' ? '+' : '-'}{formatCurrency(
+                        t.is_recurring && t.total_installments
+                          ? t.amount / t.total_installments
+                          : t.amount
+                      )}{t.is_recurring && <span className="text-xs font-normal opacity-60">/mês</span>}
                     </p>
                     <p className="text-xs text-slate-400 dark:text-gray-500">{formatDate(t.date)}</p>
                   </div>
 
-                  {/* Actions (edit + delete) */}
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
                     <button
                       onClick={() => setEditTarget(t)}
                       className="p-1.5 rounded-lg hover:bg-brand-50 dark:hover:bg-brand-500/10 text-slate-300 dark:text-gray-600 hover:text-brand-500 transition-all"
-                      title="Editar categoria / forma de pagamento"
+                      title="Editar"
                     >
                       <Pencil className="w-4 h-4" />
                     </button>
                     <button
-                      onClick={() => handleDelete(t.id)}
+                      onClick={() => setDeleteId(t.id)}
                       className="p-1.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-500/10 text-slate-300 dark:text-gray-600 hover:text-rose-500 transition-all"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -262,26 +231,22 @@ export default function Transactions() {
         </div>
       )}
 
-      <AddIncomeModal
-        open={showIncome}
-        onClose={() => setShowIncome(false)}
-        onSuccess={() => { invalidate(); setShowIncome(false) }}
-      />
-      <AddExpenseModal
-        open={showExpense}
-        onClose={() => setShowExpense(false)}
-        onSuccess={() => { invalidate(); setShowExpense(false) }}
-      />
-      <AddAluguelModal
-        open={showAluguel}
-        onClose={() => setShowAluguel(false)}
-        onSuccess={() => { invalidate(); setShowAluguel(false) }}
-      />
+      <AddIncomeModal open={showIncome} onClose={() => setShowIncome(false)}
+        onSuccess={() => { invalidate(); setShowIncome(false) }} />
+      <AddExpenseModal open={showExpense} onClose={() => setShowExpense(false)}
+        onSuccess={() => { invalidate(); setShowExpense(false) }} />
+      <AddAluguelModal open={showAluguel} onClose={() => setShowAluguel(false)}
+        onSuccess={() => { invalidate(); setShowAluguel(false) }} />
       <EditTransactionModal
         open={editTarget !== null}
         transaction={editTarget}
         onClose={() => setEditTarget(null)}
         onSuccess={() => { invalidate(); setEditTarget(null) }}
+      />
+      <ConfirmModal
+        open={deleteId !== null}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteId(null)}
       />
     </div>
   )

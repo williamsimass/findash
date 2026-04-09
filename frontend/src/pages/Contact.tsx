@@ -21,12 +21,7 @@ export default function Contact() {
         </p>
       </div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="card p-6 space-y-5"
-      >
-        {/* Dev info */}
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="card p-6 space-y-5">
         <div className="flex items-center gap-4">
           <div className="w-14 h-14 rounded-2xl bg-brand-500/10 flex items-center justify-center">
             <Code2 className="w-7 h-7 text-brand-500" />
@@ -38,7 +33,6 @@ export default function Contact() {
         </div>
 
         <div className="border-t border-slate-100 dark:border-gray-800 pt-5 space-y-3">
-          {/* WhatsApp button */}
           <button
             onClick={openWhatsApp}
             className="w-full flex items-center justify-center gap-3 py-3.5 px-5 rounded-xl bg-[#25D366] hover:bg-[#1ebe5d] text-white font-bold text-base transition-all shadow-lg shadow-green-500/20 hover:shadow-green-500/40 hover:scale-[1.02] active:scale-[0.98]"
@@ -48,25 +42,16 @@ export default function Contact() {
             </svg>
             Falar no WhatsApp
           </button>
-
-          <p className="text-center text-xs text-slate-400 dark:text-gray-500">
-            Clique para abrir o WhatsApp e enviar uma mensagem
-          </p>
+          <p className="text-center text-xs text-slate-400 dark:text-gray-500">Clique para abrir o WhatsApp e enviar uma mensagem</p>
         </div>
 
-        {/* Info box */}
         <div className="bg-slate-50 dark:bg-gray-800/50 rounded-xl p-4">
           <div className="flex items-start gap-3">
             <Mail className="w-4 h-4 text-brand-500 shrink-0 mt-0.5" />
             <div>
               <p className="text-sm font-medium text-slate-700 dark:text-gray-300">Como podemos ajudar?</p>
               <ul className="mt-2 space-y-1">
-                {[
-                  'Reportar bugs ou problemas',
-                  'Sugestões de novas funcionalidades',
-                  'Dúvidas sobre como usar o FinDash',
-                  'Feedbacks gerais sobre o sistema',
-                ].map((item) => (
+                {['Reportar bugs ou problemas', 'Sugestões de novas funcionalidades', 'Dúvidas sobre como usar o FinDash', 'Feedbacks gerais sobre o sistema'].map((item) => (
                   <li key={item} className="text-xs text-slate-500 dark:text-gray-400 flex items-center gap-1.5">
                     <span className="w-1 h-1 rounded-full bg-brand-500 shrink-0" />
                     {item}

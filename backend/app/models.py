@@ -34,6 +34,7 @@ class Transaction(Base):
     person_name = Column(String, nullable=True)     # dono do cartão
     date = Column(DateTime(timezone=True), nullable=False)
     is_installment = Column(Boolean, default=False)
+    is_recurring = Column(Boolean, default=False)
     total_installments = Column(Integer, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 

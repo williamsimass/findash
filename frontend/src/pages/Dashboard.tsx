@@ -13,6 +13,7 @@ import CategoryChart from '../components/Dashboard/CategoryChart'
 import RecentTransactions from '../components/Dashboard/RecentTransactions'
 import AddIncomeModal from '../components/Modals/AddIncomeModal'
 import AddExpenseModal from '../components/Modals/AddExpenseModal'
+import ConfirmModal from '../components/Modals/ConfirmModal'
 import type { BalanceSummary, Transaction } from '../types'
 
 export default function Dashboard() {
@@ -20,6 +21,7 @@ export default function Dashboard() {
   const qc = useQueryClient()
   const [showIncome, setShowIncome]   = useState(false)
   const [showExpense, setShowExpense] = useState(false)
+  const [deleteId, setDeleteId]       = useState<number | null>(null)
 
   const now = new Date()
   const greeting = now.getHours() < 12 ? 'Bom dia' : now.getHours() < 18 ? 'Boa tarde' : 'Boa noite'
@@ -38,14 +40,20 @@ export default function Dashboard() {
   })
 
   async function handleDelete(id: number) {
-    if (!confirm('Remover esta transação?')) return
+    setDeleteId(id)
+  }
+
+  async function confirmDelete() {
+    if (deleteId === null) return
     try {
-      await transactionsApi.delete(id)
+      await transactionsApi.delete(deleteId)
       qc.invalidateQueries({ queryKey: ['transactions'] })
       qc.invalidateQueries({ queryKey: ['summary'] })
       toast.success('Transação removida')
     } catch {
       toast.error('Erro ao remover')
+    } finally {
+      setDeleteId(null)
     }
   }
 
@@ -109,6 +117,12 @@ export default function Dashboard() {
       {!loadingTxns && (
         <RecentTransactions transactions={transactions} onDelete={handleDelete} />
       )}
+
+      <ConfirmModal
+        open={deleteId !== null}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteId(null)}
+      />
 
       {/* Modals */}
       <AddIncomeModal
